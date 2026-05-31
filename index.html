@@ -15,7 +15,7 @@
   }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:'IBM Plex Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:2rem 1rem; }
-  .wrapper { max-width:720px; margin:0 auto; }
+  .wrapper { max-width:780px; margin:0 auto; }
   .header { margin-bottom:2rem; }
   .header h1 { font-size:22px; font-weight:600; letter-spacing:-.02em; }
   .header p { font-size:14px; color:var(--muted); margin-top:4px; }
@@ -25,17 +25,32 @@
   .api-row { display:flex; gap:8px; }
   .api-row input { flex:1; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-family:'IBM Plex Mono',monospace; font-size:13px; background:var(--bg); color:var(--text); outline:none; transition:border-color .15s; }
   .api-row input:focus { border-color:var(--blue); }
+  input[type=text], input[type=password] { padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--bg); color:var(--text); outline:none; transition:border-color .15s; width:100%; }
+  input[type=text]:focus, input[type=password]:focus { border-color:var(--blue); }
   button.small { padding:0 14px; height:40px; border:1px solid var(--border); border-radius:8px; background:var(--surface); font-size:12px; cursor:pointer; white-space:nowrap; font-family:'IBM Plex Sans',sans-serif; color:var(--text); }
   button.small:hover { background:var(--bg); }
   .section-gap { margin-top:1.25rem; }
   .zones-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px; }
-  @media(max-width:480px){ .zones-grid { grid-template-columns:1fr; } }
+  @media(max-width:500px){ .zones-grid { grid-template-columns:1fr; } }
   .zone-btn { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; cursor:pointer; text-align:left; width:100%; transition:border-color .15s,background .15s; }
   .zone-btn:hover { border-color:#9CA3AF; }
   .zone-btn.active { border:2px solid var(--blue); background:var(--blue-bg); }
   .zone-num { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); margin-bottom:3px; }
   .zone-name { font-size:13px; font-weight:500; color:var(--text); }
   .zone-desc { font-size:11px; color:var(--muted); margin-top:2px; }
+  .business-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .chip { padding:6px 12px; border:1px solid var(--border); border-radius:99px; font-size:12px; cursor:pointer; background:var(--bg); color:var(--text); transition:all .15s; white-space:nowrap; }
+  .chip:hover { border-color:#9CA3AF; }
+  .chip.active { background:var(--text); color:var(--bg); border-color:var(--text); }
+  .custom-input-row { display:flex; gap:8px; margin-top:10px; }
+  .custom-input-row input { flex:1; }
+  .map-container { border-radius:10px; overflow:hidden; border:1px solid var(--border); margin-top:8px; position:relative; }
+  #draw-map { width:100%; height:380px; }
+  .map-controls { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .map-btn { padding:8px 14px; border:1px solid var(--border); border-radius:8px; font-size:12px; cursor:pointer; background:var(--surface); color:var(--text); font-family:'IBM Plex Sans',sans-serif; transition:background .15s; }
+  .map-btn:hover { background:var(--bg); }
+  .map-btn.active { background:var(--text); color:var(--bg); border-color:var(--text); }
+  .map-hint { font-size:12px; color:var(--muted); margin-top:6px; font-style:italic; }
   .run-btn { width:100%; padding:12px; margin-top:1.25rem; border:none; border-radius:8px; background:var(--blue); color:white; font-size:14px; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; transition:opacity .15s; }
   .run-btn:hover { opacity:.9; }
   .run-btn:disabled { opacity:.35; cursor:not-allowed; }
@@ -76,58 +91,99 @@
   .place-score-lbl { font-size:10px; color:var(--muted); }
   .nav-link { display:inline-block; font-size:11px; color:var(--blue); text-decoration:none; margin-top:4px; }
   .error-box { background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:14px; font-size:13px; color:#991B1B; line-height:1.5; }
-  .info-box { background:var(--blue-bg); border:1px solid #BFDBFE; border-radius:8px; padding:14px; font-size:13px; color:#1E429F; line-height:1.6; margin-bottom:1rem; }
-  #map { display:none; }
+  #hidden-map { display:none; }
+  .tab-row { display:flex; gap:0; margin-top:8px; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .tab-btn { flex:1; padding:9px; font-size:12px; cursor:pointer; background:var(--bg); color:var(--muted); border:none; font-family:'IBM Plex Sans',sans-serif; transition:all .15s; }
+  .tab-btn.active { background:var(--text); color:var(--bg); }
 </style>
 </head>
 <body>
 <div class="wrapper">
   <div class="header">
-    <div class="version-tag">MVP v2.0</div>
+    <div class="version-tag">MVP v3.0</div>
     <h1>Agente de Segmentación</h1>
-    <p>Gran Caracas · Ferreterías · Google Maps Places API</p>
+    <p>Gran Caracas · Google Maps Places API</p>
   </div>
 
-  <div class="card" id="cfg-card">
+  <div class="card">
     <span class="field-label">🔑 Google Maps API Key</span>
     <div class="api-row">
       <input type="password" id="apikey" placeholder="AIzaSy..." oninput="chk()">
       <button class="small" onclick="toggleVis()" id="vbtn">Mostrar</button>
     </div>
-    <div style="margin-top:8px;font-size:12px;color:var(--muted);">
-      ⚠️ Asegúrate de que tu API Key tenga habilitada la <strong>Places API (New)</strong> en Google Cloud Console.
+  </div>
+
+  <div class="card">
+    <span class="field-label">🏪 Tipo de negocio a buscar</span>
+    <div class="business-chips" id="chips">
+      <div class="chip active" onclick="selectChip(this,'ferreteria')">Ferretería</div>
+      <div class="chip" onclick="selectChip(this,'farmacia')">Farmacia</div>
+      <div class="chip" onclick="selectChip(this,'supermercado')">Supermercado</div>
+      <div class="chip" onclick="selectChip(this,'tienda de electrodomesticos')">Electrodomésticos</div>
+      <div class="chip" onclick="selectChip(this,'libreria')">Librería</div>
+      <div class="chip" onclick="selectChip(this,'panaderia')">Panadería</div>
+      <div class="chip" onclick="selectChip(this,'restaurant')">Restaurant</div>
+      <div class="chip" onclick="selectChip(this,'salon de belleza')">Salón de belleza</div>
+    </div>
+    <div class="custom-input-row">
+      <input type="text" id="custom-biz" placeholder="O escribe otro tipo de negocio..." oninput="onCustomInput()" />
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="field-label">📍 Zona de búsqueda</span>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-preset" onclick="switchTab('preset')">Zonas predefinidas</button>
+      <button class="tab-btn" id="tab-draw" onclick="switchTab('draw')">Dibujar en mapa</button>
     </div>
 
-    <div class="section-gap">
-      <span class="field-label">📍 Selecciona una zona</span>
+    <div id="panel-preset" class="section-gap">
       <div class="zones-grid" id="zgrid"></div>
     </div>
 
-    <button class="run-btn" id="runbtn" onclick="initAndRun()" disabled>Buscar ferreterías</button>
-    <div class="status-bar" id="stbar"></div>
+    <div id="panel-draw" class="section-gap" style="display:none">
+      <div class="map-container">
+        <div id="draw-map"></div>
+      </div>
+      <div class="map-controls">
+        <button class="map-btn active" id="btn-circle" onclick="setDrawMode('circle')">⭕ Círculo</button>
+        <button class="map-btn" id="btn-polygon" onclick="setDrawMode('polygon')">⬡ Polígono libre</button>
+        <button class="map-btn" id="btn-clear" onclick="clearDrawing()">🗑 Limpiar</button>
+      </div>
+      <p class="map-hint" id="draw-hint">Haz clic en el mapa para definir el centro del área de búsqueda.</p>
+    </div>
   </div>
 
-  <div id="map"></div>
+  <button class="run-btn" id="runbtn" onclick="initAndRun()" disabled>Buscar negocios</button>
+  <div class="status-bar" id="stbar"></div>
+
+  <div id="hidden-map"></div>
   <div id="results"></div>
 </div>
 
 <script>
 var ZONES = [
-  {id:1,name:"Oeste · Catia",desc:"Propatria, Av. Sucre",lat:10.5014,lng:-67.0056,r:2000},
-  {id:2,name:"Centro",desc:"Baralt, Candelaria",lat:10.4880,lng:-66.8791,r:1800},
-  {id:3,name:"Suroeste · Yaguara",desc:"San Martín, La Yaguara",lat:10.4611,lng:-66.9411,r:2200},
-  {id:4,name:"Eje Sur",desc:"El Valle, Santa Mónica",lat:10.4533,lng:-66.8933,r:2000},
-  {id:5,name:"Eje Financiero",desc:"Chacao, Las Mercedes",lat:10.4889,lng:-66.8467,r:1800},
-  {id:6,name:"Industrial Este",desc:"Boleíta, Los Ruices",lat:10.5011,lng:-66.8344,r:2000},
-  {id:7,name:"Petare",desc:"Casco, Palo Verde",lat:10.4839,lng:-66.7978,r:2000},
-  {id:8,name:"Sureste",desc:"Baruta, El Hatillo",lat:10.4278,lng:-66.8339,r:2500},
-  {id:9,name:"Guarenas / Guatire",desc:"Av. Intercomunal",lat:10.4656,lng:-66.6078,r:3000},
-  {id:10,name:"Altos Mirandinos",desc:"San Antonio, Los Teques",lat:10.3519,lng:-67.0294,r:3000}
+  {id:1,name:"Oeste · Catia",desc:"Propatria, Av. Sucre",lat:10.4961,lng:-67.0289,r:2500},
+  {id:2,name:"Centro",desc:"Baralt, Candelaria",lat:10.4966,lng:-66.9108,r:2000},
+  {id:3,name:"Suroeste · Yaguara",desc:"San Martín, La Yaguara",lat:10.4700,lng:-66.9600,r:2500},
+  {id:4,name:"Eje Sur",desc:"El Valle, Santa Mónica",lat:10.4478,lng:-66.9100,r:2200},
+  {id:5,name:"Eje Financiero",desc:"Chacao, Las Mercedes",lat:10.4931,lng:-66.8522,r:2000},
+  {id:6,name:"Industrial Este",desc:"Boleíta, Los Ruices",lat:10.5050,lng:-66.8450,r:2200},
+  {id:7,name:"Petare",desc:"Casco, Palo Verde",lat:10.4833,lng:-66.8017,r:2200},
+  {id:8,name:"Sureste",desc:"Baruta, El Hatillo",lat:10.4319,lng:-66.8694,r:3000},
+  {id:9,name:"Guarenas / Guatire",desc:"Av. Intercomunal",lat:10.4728,lng:-66.6150,r:3500},
+  {id:10,name:"Altos Mirandinos",desc:"San Antonio, Los Teques",lat:10.3453,lng:-67.0397,r:3500}
 ];
 
 var sel = null;
-var apiKey = '';
+var bizKeyword = 'ferreteria';
 var mapsLoaded = false;
+var drawMap = null;
+var drawingManager = null;
+var currentShape = null;
+var drawMode = 'circle';
+var customZone = null;
+var activeTab = 'preset';
 
 (function buildZones(){
   var g = document.getElementById('zgrid');
@@ -148,6 +204,34 @@ function pick(id){
   document.getElementById('z'+id).className='zone-btn active';
   sel=null;
   for(var i=0;i<ZONES.length;i++){ if(ZONES[i].id===id){sel=ZONES[i];break;} }
+  customZone=null;
+  chk();
+}
+
+function selectChip(el, val){
+  document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+  el.classList.add('active');
+  bizKeyword = val;
+  document.getElementById('custom-biz').value = '';
+}
+
+function onCustomInput(){
+  var val = document.getElementById('custom-biz').value.trim();
+  if(val){
+    document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+    bizKeyword = val;
+  }
+  chk();
+}
+
+function switchTab(tab){
+  activeTab = tab;
+  document.getElementById('tab-preset').className = 'tab-btn'+(tab==='preset'?' active':'');
+  document.getElementById('tab-draw').className = 'tab-btn'+(tab==='draw'?' active':'');
+  document.getElementById('panel-preset').style.display = tab==='preset'?'':'none';
+  document.getElementById('panel-draw').style.display = tab==='draw'?'':'none';
+  if(tab==='draw' && mapsLoaded) initDrawMap();
+  if(tab==='draw' && !mapsLoaded) loadMapsSDK(function(){ initDrawMap(); });
   chk();
 }
 
@@ -160,160 +244,198 @@ function toggleVis(){
 
 function chk(){
   var key=document.getElementById('apikey').value.trim();
-  document.getElementById('runbtn').disabled=!(key&&sel);
+  var zoneReady = (activeTab==='preset' && sel) || (activeTab==='draw' && customZone);
+  document.getElementById('runbtn').disabled=!(key && zoneReady && bizKeyword);
 }
 
 function classify(n){ return n>=100?'A':n>=25?'B':'C'; }
 function score(n,r){ return Math.round(n*0.7+(r||0)*10); }
 
-function initAndRun(){
-  apiKey = document.getElementById('apikey').value.trim();
-  if(!apiKey||!sel) return;
-  document.getElementById('runbtn').disabled=true;
-  document.getElementById('stbar').textContent='Cargando SDK de Google Maps...';
+function loadMapsSDK(cb){
+  if(mapsLoaded){ if(cb) cb(); return; }
+  var key = document.getElementById('apikey').value.trim();
+  if(!key) return;
+  window._mapsCallback = function(){
+    mapsLoaded=true;
+    if(cb) cb();
+  };
+  var s=document.createElement('script');
+  s.src='https://maps.googleapis.com/maps/api/js?key='+key+'&libraries=places,drawing&callback=_mapsCallback&loading=async';
+  s.onerror=function(){ alert('No se pudo cargar Google Maps. Verifica tu API Key.'); };
+  document.head.appendChild(s);
+}
 
-  if(mapsLoaded){
-    runSearch();
-    return;
+function initDrawMap(){
+  if(drawMap) return;
+  drawMap = new google.maps.Map(document.getElementById('draw-map'),{
+    center:{lat:10.4880, lng:-66.9000},
+    zoom:11,
+    mapTypeControl:false,
+    streetViewControl:false
+  });
+  drawingManager = new google.maps.drawing.DrawingManager({
+    drawingMode: google.maps.drawing.OverlayType.CIRCLE,
+    drawingControl: false,
+    circleOptions:{ fillColor:'#1A56DB', fillOpacity:0.2, strokeColor:'#1A56DB', strokeWeight:2, clickable:false, editable:true },
+    polygonOptions:{ fillColor:'#1A56DB', fillOpacity:0.2, strokeColor:'#1A56DB', strokeWeight:2, clickable:false, editable:true }
+  });
+  drawingManager.setMap(drawMap);
+  google.maps.event.addListener(drawingManager,'overlaycomplete',function(e){
+    if(currentShape) currentShape.setMap(null);
+    currentShape=e.overlay;
+    drawingManager.setDrawingMode(null);
+    extractZone();
+  });
+}
+
+function setDrawMode(mode){
+  drawMode=mode;
+  document.getElementById('btn-circle').className='map-btn'+(mode==='circle'?' active':'');
+  document.getElementById('btn-polygon').className='map-btn'+(mode==='polygon'?' active':'');
+  if(!drawMap){ loadMapsSDK(function(){ initDrawMap(); setDrawModeOnManager(mode); }); return; }
+  setDrawModeOnManager(mode);
+}
+
+function setDrawModeOnManager(mode){
+  if(!drawingManager) return;
+  if(mode==='circle') drawingManager.setDrawingMode(google.maps.drawing.OverlayType.CIRCLE);
+  else drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+  document.getElementById('draw-hint').textContent = mode==='circle'
+    ? 'Haz clic y arrastra para dibujar el área circular de búsqueda.'
+    : 'Haz clic en el mapa para definir los vértices del polígono. Cierra haciendo doble clic.';
+}
+
+function clearDrawing(){
+  if(currentShape){ currentShape.setMap(null); currentShape=null; }
+  customZone=null;
+  if(drawingManager) drawingManager.setDrawingMode(
+    drawMode==='circle'?google.maps.drawing.OverlayType.CIRCLE:google.maps.drawing.OverlayType.POLYGON
+  );
+  document.getElementById('draw-hint').textContent='Área limpiada. Dibuja una nueva zona.';
+  chk();
+}
+
+function extractZone(){
+  if(!currentShape){ customZone=null; chk(); return; }
+  if(currentShape.type==='circle'||currentShape.getRadius){
+    var c=currentShape.getCenter();
+    customZone={lat:c.lat(),lng:c.lng(),r:Math.round(currentShape.getRadius()),name:'Zona personalizada',id:99};
+    document.getElementById('draw-hint').textContent='✓ Área definida: radio '+Math.round(customZone.r/1000*10)/10+' km. Listo para buscar.';
+  } else {
+    var path=currentShape.getPath();
+    var lats=0,lngs=0,n=path.getLength();
+    for(var i=0;i<n;i++){ lats+=path.getAt(i).lat(); lngs+=path.getAt(i).lng(); }
+    var clat=lats/n, clng=lngs/n;
+    var maxR=0;
+    for(var i=0;i<n;i++){
+      var pt=path.getAt(i);
+      var d=Math.sqrt(Math.pow((pt.lat()-clat)*111000,2)+Math.pow((pt.lng()-clng)*111000*Math.cos(clat*Math.PI/180),2));
+      if(d>maxR) maxR=d;
+    }
+    customZone={lat:clat,lng:clng,r:Math.round(maxR),name:'Zona personalizada',id:99};
+    document.getElementById('draw-hint').textContent='✓ Polígono definido. Radio equivalente: '+Math.round(maxR/100)/10+' km.';
   }
+  chk();
+}
 
-  window.initMapCallback = function(){
-    mapsLoaded = true;
-    runSearch();
-  };
-
-  var script = document.createElement('script');
-  script.src = 'https://maps.googleapis.com/maps/api/js?key='+apiKey+'&libraries=places&callback=initMapCallback&loading=async';
-  script.onerror = function(){
-    document.getElementById('stbar').textContent='';
-    document.getElementById('results').innerHTML='<div class="card"><div class="error-box">⚠️ No se pudo cargar el SDK. Verifica que tu API Key sea válida y tenga habilitada la Maps JavaScript API en Google Cloud Console.</div></div>';
-    document.getElementById('runbtn').disabled=false;
-  };
-  document.head.appendChild(script);
+function initAndRun(){
+  var key=document.getElementById('apikey').value.trim();
+  if(!key) return;
+  document.getElementById('runbtn').disabled=true;
+  document.getElementById('stbar').textContent='Cargando Google Maps...';
+  if(mapsLoaded){ runSearch(); return; }
+  loadMapsSDK(function(){ runSearch(); });
 }
 
 function runSearch(){
-  var st = document.getElementById('stbar');
-  var out = document.getElementById('results');
+  var activeZone = activeTab==='draw' ? customZone : sel;
+  if(!activeZone){ document.getElementById('stbar').textContent='Selecciona una zona primero.'; return; }
+
+  var st=document.getElementById('stbar');
+  var out=document.getElementById('results');
   out.innerHTML='';
-  st.textContent='Buscando ferreterías en '+sel.name+'...';
+  st.textContent='Buscando "'+bizKeyword+'" en '+activeZone.name+'...';
 
-  var mapDiv = document.getElementById('map');
-  var map = new google.maps.Map(mapDiv, {
-    center: {lat: sel.lat, lng: sel.lng},
-    zoom: 14
-  });
-
-  var service = new google.maps.places.PlacesService(map);
-  var allResults = [];
-  var pages = [];
+  var hiddenDiv=document.getElementById('hidden-map');
+  var map=new google.maps.Map(hiddenDiv,{center:{lat:activeZone.lat,lng:activeZone.lng},zoom:14});
+  var service=new google.maps.places.PlacesService(map);
+  var allResults=[];
+  var pages=[];
 
   function doSearch(pageToken){
-    var req = {
-      location: new google.maps.LatLng(sel.lat, sel.lng),
-      radius: sel.r,
-      keyword: 'ferreteria'
-    };
-    if(pageToken) req.pageToken = pageToken;
-
-    service.nearbySearch(req, function(results, status, pagination){
-      var count = (results||[]).length;
-      pages.push({count: count, full: count===20});
-      allResults = allResults.concat(results||[]);
-      st.textContent = allResults.length+' ferreterías encontradas...';
-
-      if(pagination && pagination.hasNextPage && pages.length < 3){
-        setTimeout(function(){ pagination.nextPage(); }, 2200);
+    var req={location:new google.maps.LatLng(activeZone.lat,activeZone.lng),radius:activeZone.r,keyword:bizKeyword};
+    if(pageToken) req.pageToken=pageToken;
+    service.nearbySearch(req,function(results,status,pagination){
+      var count=(results||[]).length;
+      pages.push({count:count,full:count===20});
+      allResults=allResults.concat(results||[]);
+      st.textContent=allResults.length+' negocios encontrados...';
+      if(pagination&&pagination.hasNextPage&&pages.length<3){
+        setTimeout(function(){ pagination.nextPage(); },2200);
       } else {
         st.textContent='';
-        var lastFull = pages[pages.length-1].full;
-        var saturated = pages.length===3 && lastFull;
-        renderResults(allResults, pages, saturated);
+        var lastFull=pages[pages.length-1].full;
+        var saturated=pages.length===3&&lastFull;
+        renderResults(allResults,pages,saturated,activeZone,bizKeyword);
         document.getElementById('runbtn').disabled=false;
       }
     });
   }
-
   doSearch(null);
 }
 
-function renderResults(places, pages, saturated){
-  var out = document.getElementById('results');
-
-  var classified = [];
+function renderResults(places,pages,saturated,zone,keyword){
+  var out=document.getElementById('results');
+  var classified=[];
   for(var i=0;i<places.length;i++){
     var p=places[i];
     var n=p.user_ratings_total||0;
-    var lat=p.geometry.location.lat();
-    var lng=p.geometry.location.lng();
-    classified.push({
-      name:p.name,
-      vicinity:p.vicinity||'',
-      rating:p.rating,
-      reviews:n,
-      lat:lat, lng:lng,
-      tipo:classify(n),
-      sc:score(n,p.rating)
-    });
+    classified.push({name:p.name,vicinity:p.vicinity||'',rating:p.rating,reviews:n,
+      lat:p.geometry.location.lat(),lng:p.geometry.location.lng(),tipo:classify(n),sc:score(n,p.rating)});
   }
   classified.sort(function(a,b){return b.sc-a.sc;});
-
   var cA=0,cB=0,cC=0;
   for(var i=0;i<classified.length;i++){
-    if(classified[i].tipo==='A') cA++;
-    else if(classified[i].tipo==='B') cB++;
+    if(classified[i].tipo==='A')cA++;
+    else if(classified[i].tipo==='B')cB++;
     else cC++;
   }
   var zsc=cA*5+cB*3+cC*1;
-
   var pills='';
   for(var i=0;i<pages.length;i++){
     pills+='<span class="pill '+(pages[i].full?'pill-full':'pill-part')+'">Pág '+(i+1)+': '+pages[i].count+(pages[i].full?' ●':'')+'</span>';
   }
-
-  var covHtml = saturated
-    ?'<div class="coverage cov-warn"><div class="cov-title">⚠️ Cobertura parcial — zona muy densa</div><div class="cov-detail">Las 3 páginas llegaron llenas (60 resultados). Probablemente hay más ferreterías. Recomendado: subdividir esta zona en cuadrantes.</div><div class="pills">'+pills+'</div></div>'
-    :'<div class="coverage cov-ok"><div class="cov-title">✓ Cobertura completa</div><div class="cov-detail">La última página devolvió menos de 20 resultados. Universo total capturado para esta zona.</div><div class="pills">'+pills+'</div></div>';
-
+  var covHtml=saturated
+    ?'<div class="coverage cov-warn"><div class="cov-title">⚠️ Cobertura parcial — zona muy densa</div><div class="cov-detail">Las 3 páginas llegaron llenas. Existen más negocios en esta zona. Recomendado: subdivide en áreas más pequeñas.</div><div class="pills">'+pills+'</div></div>'
+    :'<div class="coverage cov-ok"><div class="cov-title">✓ Cobertura completa</div><div class="cov-detail">Universo total capturado para esta zona.</div><div class="pills">'+pills+'</div></div>';
   var rows='';
   for(var i=0;i<classified.length;i++){
     var p=classified[i];
-    var mapsUrl='https://www.google.com/maps/search/?api=1&query='+p.lat+','+p.lng;
+    var url='https://www.google.com/maps/search/?api=1&query='+p.lat+','+p.lng;
     var stars=p.rating?('⭐ '+p.rating.toFixed(1)+' · '+p.reviews.toLocaleString()+' reseñas'):'Sin reseñas';
     rows+='<div class="place-row">'
       +'<span class="badge b'+p.tipo+'">'+p.tipo+'</span>'
-      +'<div class="place-info">'
-        +'<div class="place-name">'+p.name+'</div>'
-        +'<div class="place-addr">'+p.vicinity+'</div>'
-        +'<div class="place-meta">'+stars+'</div>'
-      +'</div>'
-      +'<div class="place-right">'
-        +'<div class="place-score">'+p.sc+'</div>'
-        +'<div class="place-score-lbl">score</div>'
-        +'<a class="nav-link" href="'+mapsUrl+'" target="_blank">→ Mapa</a>'
-      +'</div>'
-      +'</div>';
+      +'<div class="place-info"><div class="place-name">'+p.name+'</div>'
+      +'<div class="place-addr">'+p.vicinity+'</div>'
+      +'<div class="place-meta">'+stars+'</div></div>'
+      +'<div class="place-right"><div class="place-score">'+p.sc+'</div>'
+      +'<div class="place-score-lbl">score</div>'
+      +'<a class="nav-link" href="'+url+'" target="_blank">→ Mapa</a></div></div>';
   }
-
+  var kwLabel=keyword.charAt(0).toUpperCase()+keyword.slice(1);
   out.innerHTML='<div class="card">'
-    +'<div class="results-header">'
-      +'<div class="results-title">Ruta '+sel.id+' · '+sel.name+'</div>'
-      +'<div class="results-count">'+classified.length+' comercios</div>'
-    +'</div>'
+    +'<div class="results-header"><div class="results-title">'+zone.name+' · '+kwLabel+'</div>'
+    +'<div class="results-count">'+classified.length+' negocios</div></div>'
     +covHtml
     +'<div class="metrics">'
-      +'<div class="metric"><div class="metric-val" style="color:#1E429F">'+cA+'</div><div class="metric-lbl">Tipo A<br>Alto potencial</div></div>'
-      +'<div class="metric"><div class="metric-val" style="color:#03543F">'+cB+'</div><div class="metric-lbl">Tipo B<br>Mediano</div></div>'
-      +'<div class="metric"><div class="metric-val" style="color:#374151">'+cC+'</div><div class="metric-lbl">Tipo C<br>Pequeño</div></div>'
+    +'<div class="metric"><div class="metric-val" style="color:#1E429F">'+cA+'</div><div class="metric-lbl">Tipo A<br>Alto potencial</div></div>'
+    +'<div class="metric"><div class="metric-val" style="color:#03543F">'+cB+'</div><div class="metric-lbl">Tipo B<br>Mediano</div></div>'
+    +'<div class="metric"><div class="metric-val" style="color:#374151">'+cC+'</div><div class="metric-lbl">Tipo C<br>Pequeño</div></div>'
     +'</div>'
-    +'<div class="score-box">'
-      +'<div class="score-label">Score de potencial financiero</div>'
-      +'<div class="score-num">'+zsc+' pts</div>'
-      +'<div class="score-formula">(A×5) + (B×3) + (C×1)</div>'
-    +'</div>'
-    +'<div class="dir-label">Directorio ordenado por potencial</div>'
-    +rows
-    +'</div>';
+    +'<div class="score-box"><div class="score-label">Score de potencial financiero</div>'
+    +'<div class="score-num">'+zsc+' pts</div>'
+    +'<div class="score-formula">(A×5) + (B×3) + (C×1)</div></div>'
+    +'<div class="dir-label">Directorio ordenado por potencial</div>'+rows+'</div>';
 }
 </script>
 </body>
