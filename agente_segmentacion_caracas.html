@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente de Segmentación — Gran Caracas</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+  :root {
+    --bg:#F4F2ED; --surface:#FFFFFF; --border:#E0DDD6; --text:#1A1917; --muted:#7A7872;
+    --blue:#1A56DB; --blue-bg:#EBF2FF; --green:#057A55; --green-bg:#DEF7EC;
+    --amber:#92400E; --amber-bg:#FEF3C7;
+    --a-bg:#EBF2FF; --a-text:#1E429F; --b-bg:#DEF7EC; --b-text:#03543F;
+    --c-bg:#F3F4F6; --c-text:#374151;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'IBM Plex Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:2rem 1rem; }
+  .wrapper { max-width:720px; margin:0 auto; }
+  .header { margin-bottom:2rem; }
+  .header h1 { font-size:22px; font-weight:600; letter-spacing:-.02em; }
+  .header p { font-size:14px; color:var(--muted); margin-top:4px; }
+  .version-tag { display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; background:var(--text); color:var(--bg); padding:2px 7px; border-radius:3px; margin-bottom:10px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:1rem; }
+  .field-label { font-size:12px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; display:block; }
+  .api-row { display:flex; gap:8px; }
+  .api-row input { flex:1; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-family:'IBM Plex Mono',monospace; font-size:13px; background:var(--bg); color:var(--text); outline:none; transition:border-color .15s; }
+  .api-row input:focus { border-color:var(--blue); }
+  button.small { padding:0 14px; height:40px; border:1px solid var(--border); border-radius:8px; background:var(--surface); font-size:12px; cursor:pointer; white-space:nowrap; font-family:'IBM Plex Sans',sans-serif; color:var(--text); }
+  button.small:hover { background:var(--bg); }
+  .section-gap { margin-top:1.25rem; }
+  .zones-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px; }
+  @media(max-width:480px){ .zones-grid { grid-template-columns:1fr; } }
+  .zone-btn { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; cursor:pointer; text-align:left; width:100%; transition:border-color .15s,background .15s; }
+  .zone-btn:hover { border-color:#9CA3AF; }
+  .zone-btn.active { border:2px solid var(--blue); background:var(--blue-bg); }
+  .zone-num { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); margin-bottom:3px; }
+  .zone-name { font-size:13px; font-weight:500; color:var(--text); }
+  .zone-desc { font-size:11px; color:var(--muted); margin-top:2px; }
+  .run-btn { width:100%; padding:12px; margin-top:1.25rem; border:none; border-radius:8px; background:var(--blue); color:white; font-size:14px; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; transition:opacity .15s; }
+  .run-btn:hover { opacity:.9; }
+  .run-btn:disabled { opacity:.35; cursor:not-allowed; }
+  .status-bar { margin-top:10px; font-size:13px; color:var(--muted); text-align:center; min-height:20px; font-family:'IBM Plex Mono',monospace; }
+  .results-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
+  .results-title { font-size:18px; font-weight:600; }
+  .results-count { font-size:13px; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+  .coverage { border-radius:8px; padding:12px 14px; margin-bottom:1.25rem; font-size:13px; }
+  .cov-ok { background:var(--green-bg); border:1px solid #A7F3D0; color:var(--green); }
+  .cov-warn { background:var(--amber-bg); border:1px solid #FCD34D; color:var(--amber); }
+  .cov-title { font-weight:600; margin-bottom:4px; }
+  .cov-detail { font-size:12px; opacity:.85; line-height:1.5; }
+  .pills { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .pill { font-size:11px; padding:2px 8px; border-radius:99px; font-family:'IBM Plex Mono',monospace; }
+  .pill-full { background:#92400E; color:white; }
+  .pill-part { background:#065F46; color:white; }
+  .metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.25rem; }
+  .metric { background:var(--bg); border-radius:8px; padding:14px 12px; text-align:center; }
+  .metric-val { font-size:28px; font-weight:600; }
+  .metric-lbl { font-size:11px; color:var(--muted); margin-top:4px; line-height:1.4; }
+  .score-box { background:var(--bg); border-radius:8px; padding:14px 16px; margin-bottom:1.25rem; }
+  .score-num { font-size:28px; font-weight:600; font-family:'IBM Plex Mono',monospace; }
+  .score-label { font-size:12px; color:var(--muted); margin-bottom:2px; }
+  .score-formula { font-size:11px; color:var(--muted); font-family:'IBM Plex Mono',monospace; margin-top:3px; }
+  .dir-label { font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:10px; }
+  .place-row { display:flex; gap:10px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--border); }
+  .place-row:last-child { border-bottom:none; }
+  .badge { font-size:11px; font-weight:600; padding:3px 9px; border-radius:99px; flex-shrink:0; margin-top:1px; font-family:'IBM Plex Mono',monospace; }
+  .bA { background:var(--a-bg); color:var(--a-text); }
+  .bB { background:var(--b-bg); color:var(--b-text); }
+  .bC { background:var(--c-bg); color:var(--c-text); }
+  .place-info { flex:1; min-width:0; }
+  .place-name { font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .place-addr { font-size:11px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .place-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+  .place-right { text-align:right; flex-shrink:0; }
+  .place-score { font-size:14px; font-weight:600; font-family:'IBM Plex Mono',monospace; }
+  .place-score-lbl { font-size:10px; color:var(--muted); }
+  .nav-link { display:inline-block; font-size:11px; color:var(--blue); text-decoration:none; margin-top:4px; }
+  .error-box { background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:14px; font-size:13px; color:#991B1B; line-height:1.5; }
+  .info-box { background:var(--blue-bg); border:1px solid #BFDBFE; border-radius:8px; padding:14px; font-size:13px; color:#1E429F; line-height:1.6; margin-bottom:1rem; }
+  #map { display:none; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <div class="version-tag">MVP v2.0</div>
+    <h1>Agente de Segmentación</h1>
+    <p>Gran Caracas · Ferreterías · Google Maps Places API</p>
+  </div>
+
+  <div class="card" id="cfg-card">
+    <span class="field-label">🔑 Google Maps API Key</span>
+    <div class="api-row">
+      <input type="password" id="apikey" placeholder="AIzaSy..." oninput="chk()">
+      <button class="small" onclick="toggleVis()" id="vbtn">Mostrar</button>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:var(--muted);">
+      ⚠️ Asegúrate de que tu API Key tenga habilitada la <strong>Places API (New)</strong> en Google Cloud Console.
+    </div>
+
+    <div class="section-gap">
+      <span class="field-label">📍 Selecciona una zona</span>
+      <div class="zones-grid" id="zgrid"></div>
+    </div>
+
+    <button class="run-btn" id="runbtn" onclick="initAndRun()" disabled>Buscar ferreterías</button>
+    <div class="status-bar" id="stbar"></div>
+  </div>
+
+  <div id="map"></div>
+  <div id="results"></div>
+</div>
+
+<script>
+var ZONES = [
+  {id:1,name:"Oeste · Catia",desc:"Propatria, Av. Sucre",lat:10.5014,lng:-67.0056,r:2000},
+  {id:2,name:"Centro",desc:"Baralt, Candelaria",lat:10.4880,lng:-66.8791,r:1800},
+  {id:3,name:"Suroeste · Yaguara",desc:"San Martín, La Yaguara",lat:10.4611,lng:-66.9411,r:2200},
+  {id:4,name:"Eje Sur",desc:"El Valle, Santa Mónica",lat:10.4533,lng:-66.8933,r:2000},
+  {id:5,name:"Eje Financiero",desc:"Chacao, Las Mercedes",lat:10.4889,lng:-66.8467,r:1800},
+  {id:6,name:"Industrial Este",desc:"Boleíta, Los Ruices",lat:10.5011,lng:-66.8344,r:2000},
+  {id:7,name:"Petare",desc:"Casco, Palo Verde",lat:10.4839,lng:-66.7978,r:2000},
+  {id:8,name:"Sureste",desc:"Baruta, El Hatillo",lat:10.4278,lng:-66.8339,r:2500},
+  {id:9,name:"Guarenas / Guatire",desc:"Av. Intercomunal",lat:10.4656,lng:-66.6078,r:3000},
+  {id:10,name:"Altos Mirandinos",desc:"San Antonio, Los Teques",lat:10.3519,lng:-67.0294,r:3000}
+];
+
+var sel = null;
+var apiKey = '';
+var mapsLoaded = false;
+
+(function buildZones(){
+  var g = document.getElementById('zgrid');
+  var html = '';
+  for(var i=0;i<ZONES.length;i++){
+    var z=ZONES[i];
+    html+='<button class="zone-btn" id="z'+z.id+'" onclick="pick('+z.id+')">'
+      +'<div class="zone-num">RUTA '+z.id+'</div>'
+      +'<div class="zone-name">'+z.name+'</div>'
+      +'<div class="zone-desc">'+z.desc+'</div>'
+      +'</button>';
+  }
+  g.innerHTML=html;
+})();
+
+function pick(id){
+  for(var i=0;i<ZONES.length;i++) document.getElementById('z'+ZONES[i].id).className='zone-btn';
+  document.getElementById('z'+id).className='zone-btn active';
+  sel=null;
+  for(var i=0;i<ZONES.length;i++){ if(ZONES[i].id===id){sel=ZONES[i];break;} }
+  chk();
+}
+
+function toggleVis(){
+  var inp=document.getElementById('apikey');
+  var btn=document.getElementById('vbtn');
+  if(inp.type==='password'){inp.type='text';btn.textContent='Ocultar';}
+  else{inp.type='password';btn.textContent='Mostrar';}
+}
+
+function chk(){
+  var key=document.getElementById('apikey').value.trim();
+  document.getElementById('runbtn').disabled=!(key&&sel);
+}
+
+function classify(n){ return n>=100?'A':n>=25?'B':'C'; }
+function score(n,r){ return Math.round(n*0.7+(r||0)*10); }
+
+function initAndRun(){
+  apiKey = document.getElementById('apikey').value.trim();
+  if(!apiKey||!sel) return;
+  document.getElementById('runbtn').disabled=true;
+  document.getElementById('stbar').textContent='Cargando SDK de Google Maps...';
+
+  if(mapsLoaded){
+    runSearch();
+    return;
+  }
+
+  window.initMapCallback = function(){
+    mapsLoaded = true;
+    runSearch();
+  };
+
+  var script = document.createElement('script');
+  script.src = 'https://maps.googleapis.com/maps/api/js?key='+apiKey+'&libraries=places&callback=initMapCallback&loading=async';
+  script.onerror = function(){
+    document.getElementById('stbar').textContent='';
+    document.getElementById('results').innerHTML='<div class="card"><div class="error-box">⚠️ No se pudo cargar el SDK. Verifica que tu API Key sea válida y tenga habilitada la Maps JavaScript API en Google Cloud Console.</div></div>';
+    document.getElementById('runbtn').disabled=false;
+  };
+  document.head.appendChild(script);
+}
+
+function runSearch(){
+  var st = document.getElementById('stbar');
+  var out = document.getElementById('results');
+  out.innerHTML='';
+  st.textContent='Buscando ferreterías en '+sel.name+'...';
+
+  var mapDiv = document.getElementById('map');
+  var map = new google.maps.Map(mapDiv, {
+    center: {lat: sel.lat, lng: sel.lng},
+    zoom: 14
+  });
+
+  var service = new google.maps.places.PlacesService(map);
+  var allResults = [];
+  var pages = [];
+
+  function doSearch(pageToken){
+    var req = {
+      location: new google.maps.LatLng(sel.lat, sel.lng),
+      radius: sel.r,
+      keyword: 'ferreteria'
+    };
+    if(pageToken) req.pageToken = pageToken;
+
+    service.nearbySearch(req, function(results, status, pagination){
+      var count = (results||[]).length;
+      pages.push({count: count, full: count===20});
+      allResults = allResults.concat(results||[]);
+      st.textContent = allResults.length+' ferreterías encontradas...';
+
+      if(pagination && pagination.hasNextPage && pages.length < 3){
+        setTimeout(function(){ pagination.nextPage(); }, 2200);
+      } else {
+        st.textContent='';
+        var lastFull = pages[pages.length-1].full;
+        var saturated = pages.length===3 && lastFull;
+        renderResults(allResults, pages, saturated);
+        document.getElementById('runbtn').disabled=false;
+      }
+    });
+  }
+
+  doSearch(null);
+}
+
+function renderResults(places, pages, saturated){
+  var out = document.getElementById('results');
+
+  var classified = [];
+  for(var i=0;i<places.length;i++){
+    var p=places[i];
+    var n=p.user_ratings_total||0;
+    var lat=p.geometry.location.lat();
+    var lng=p.geometry.location.lng();
+    classified.push({
+      name:p.name,
+      vicinity:p.vicinity||'',
+      rating:p.rating,
+      reviews:n,
+      lat:lat, lng:lng,
+      tipo:classify(n),
+      sc:score(n,p.rating)
+    });
+  }
+  classified.sort(function(a,b){return b.sc-a.sc;});
+
+  var cA=0,cB=0,cC=0;
+  for(var i=0;i<classified.length;i++){
+    if(classified[i].tipo==='A') cA++;
+    else if(classified[i].tipo==='B') cB++;
+    else cC++;
+  }
+  var zsc=cA*5+cB*3+cC*1;
+
+  var pills='';
+  for(var i=0;i<pages.length;i++){
+    pills+='<span class="pill '+(pages[i].full?'pill-full':'pill-part')+'">Pág '+(i+1)+': '+pages[i].count+(pages[i].full?' ●':'')+'</span>';
+  }
+
+  var covHtml = saturated
+    ?'<div class="coverage cov-warn"><div class="cov-title">⚠️ Cobertura parcial — zona muy densa</div><div class="cov-detail">Las 3 páginas llegaron llenas (60 resultados). Probablemente hay más ferreterías. Recomendado: subdividir esta zona en cuadrantes.</div><div class="pills">'+pills+'</div></div>'
+    :'<div class="coverage cov-ok"><div class="cov-title">✓ Cobertura completa</div><div class="cov-detail">La última página devolvió menos de 20 resultados. Universo total capturado para esta zona.</div><div class="pills">'+pills+'</div></div>';
+
+  var rows='';
+  for(var i=0;i<classified.length;i++){
+    var p=classified[i];
+    var mapsUrl='https://www.google.com/maps/search/?api=1&query='+p.lat+','+p.lng;
+    var stars=p.rating?('⭐ '+p.rating.toFixed(1)+' · '+p.reviews.toLocaleString()+' reseñas'):'Sin reseñas';
+    rows+='<div class="place-row">'
+      +'<span class="badge b'+p.tipo+'">'+p.tipo+'</span>'
+      +'<div class="place-info">'
+        +'<div class="place-name">'+p.name+'</div>'
+        +'<div class="place-addr">'+p.vicinity+'</div>'
+        +'<div class="place-meta">'+stars+'</div>'
+      +'</div>'
+      +'<div class="place-right">'
+        +'<div class="place-score">'+p.sc+'</div>'
+        +'<div class="place-score-lbl">score</div>'
+        +'<a class="nav-link" href="'+mapsUrl+'" target="_blank">→ Mapa</a>'
+      +'</div>'
+      +'</div>';
+  }
+
+  out.innerHTML='<div class="card">'
+    +'<div class="results-header">'
+      +'<div class="results-title">Ruta '+sel.id+' · '+sel.name+'</div>'
+      +'<div class="results-count">'+classified.length+' comercios</div>'
+    +'</div>'
+    +covHtml
+    +'<div class="metrics">'
+      +'<div class="metric"><div class="metric-val" style="color:#1E429F">'+cA+'</div><div class="metric-lbl">Tipo A<br>Alto potencial</div></div>'
+      +'<div class="metric"><div class="metric-val" style="color:#03543F">'+cB+'</div><div class="metric-lbl">Tipo B<br>Mediano</div></div>'
+      +'<div class="metric"><div class="metric-val" style="color:#374151">'+cC+'</div><div class="metric-lbl">Tipo C<br>Pequeño</div></div>'
+    +'</div>'
+    +'<div class="score-box">'
+      +'<div class="score-label">Score de potencial financiero</div>'
+      +'<div class="score-num">'+zsc+' pts</div>'
+      +'<div class="score-formula">(A×5) + (B×3) + (C×1)</div>'
+    +'</div>'
+    +'<div class="dir-label">Directorio ordenado por potencial</div>'
+    +rows
+    +'</div>';
+}
+</script>
+</body>
+</html>
